@@ -34,10 +34,17 @@ func main() {
 	fmt.Printf("\nCalling with zero-length InstanceId\n")
 	makeTheCall(svc, params)
 
-	// Call with nil struct
-	params = nil
-	fmt.Printf("\nCalling with nil input struct\n")
+	// Call with non-nill struct that has null character InstanceId
+	params = &autoscaling.TerminateInstanceInAutoScalingGroupInput{
+		InstanceId:                     aws.String("\000"),
+		ShouldDecrementDesiredCapacity: aws.Bool(true),
+	}
+	fmt.Printf("\nCalling with null char InstanceId\n")
 	makeTheCall(svc, params)
+
+	// Call with nil struct
+	fmt.Printf("\nCalling with nil input struct\n")
+	makeTheCall(svc, nil)
 }
 
 func makeTheCall(svc *autoscaling.AutoScaling, input *autoscaling.TerminateInstanceInAutoScalingGroupInput) {
