@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 )
@@ -28,10 +29,24 @@ func main() {
 	}
 
 	// golang API docs: https://docs.aws.amazon.com/sdk-for-go/api/service/autoscaling/#AutoScaling.TerminateInstanceInAutoScalingGroup
-	resp, err := svc.TerminateInstanceInAutoScalingGroup(params)
+	result, err := svc.TerminateInstanceInAutoScalingGroup(params)
 	if err != nil {
-		fmt.Printf("Error returned: %s\n", err)
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case autoscaling.ErrCodeScalingActivityInProgressFault:
+				fmt.Println(autoscaling.ErrCodeScalingActivityInProgressFault, aerr.Error())
+			case autoscaling.ErrCodeResourceContentionFault:
+				fmt.Println(autoscaling.ErrCodeResourceContentionFault, aerr.Error())
+			default:
+				fmt.Printf("Other AWS Error: %s", aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Printf("Non-AWS Error: %s", err.Error())
+		}
+		return
 	}
 
-	fmt.Printf("Response as string: %s\n", resp.String())
+	fmt.Printf("Result: %s", result)
 }
